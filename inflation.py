@@ -1,36 +1,45 @@
-from pyspark.sql import SparkSession
 import requests
 import json
+import os
+import pandas as pd  # Import pandas for data manipulation
+from dotenv import load_dotenv
 
-# Initialize Spark Session
-spark = SparkSession.builder \
-    .appName("InflationRatesETL") \
-    .getOrCreate()
+# Load environment variables from .env file
+load_dotenv()
+
 
 # Define API details
-API_URL = "https://api.api-ninjas.com/v1/inflation"
-API_KEY = os.e  # Replace with your actual API key
+API_URL = "https://api.api-ninjas.com/v1/inflation?country="
+API_KEY = os.environ.get("API_KEY", "default_value")  # Get API key from environment variables
 HEADERS = {"X-Api-Key": API_KEY}
 
 def extract_data():
-    """Extract data from the InflationRates API."""
+    """Extract data from the Inflation API."""
     response = requests.get(API_URL, headers=HEADERS)
     if response.status_code == 200:
-        return response.json()
+        print(response.json())
+        return response.json()  # Return the JSON response as a Python object
     else:
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
+
 def transform_data(data):
-    """Transform the extracted data into a Spark DataFrame."""
+    """Transform the extracted data into a pandas DataFrame."""
     # Convert JSON data to a list of dictionaries
-    records = [{"country": item["country"], "inflation_rate": item["inflation_rate"]} for item in data]
-    # Create a Spark DataFrame
-    return spark.createDataFrame(records)
+    records = [
+    {key: value for key, value in item.items()}
+    for item in data
+]
+    # Create a pandas DataFrame
+    return pd.DataFrame(records)
 
 def load_data(df):
     """Load the transformed data into a storage or display."""
-    # Show the DataFrame content (can be replaced with actual storage logic)
-    df.show()
+    # Display the DataFrame content
+    print(df)
+    # Save the DataFrame to a CSV file
+    df.to_csv("inflation_rates.csv", index=False)
+    print("Data saved to inflation_rates.csv")
 
 if __name__ == "__main__":
     # ETL Process
